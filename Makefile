@@ -1,2 +1,5 @@
-run:
-	PYTHONDONTWRITEBYTECODE=1 FLASK_APP=api FLASK_ENVIRONMENT=development FLASK_DEBUG=1 flask run
+runapi:
+	uvicorn api:app --reload
+
+runworker:
+	python worker.py

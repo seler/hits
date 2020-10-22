@@ -1,11 +1,17 @@
-from flask import Flask, request
-from processing_queue import Queue
+from fastapi import FastAPI
+from pydantic import BaseModel
 
-app = Flask(__name__)
-queue = Queue()
+from file_queue import Queue
+
+queue = Queue("./queuefile")
+app = FastAPI()
 
 
-@app.route("/", methods=["POST"])
-def schedule():
-    queue.put(request.get_json())
-    return ""
+class Request(BaseModel):
+    url: str
+
+
+@app.post("/")
+async def index(request: Request):
+    await queue.put({"url": request.url})
+    return {"Hello": "World"}
