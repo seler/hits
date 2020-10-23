@@ -1,4 +1,5 @@
 import asyncio
+import fcntl
 import json
 import shutil
 
@@ -8,18 +9,23 @@ class Queue:
         self.filepath = filepath
 
     async def put(self, value):
-        with open(self.filepath, "a") as fifo:
-            fifo.write(json.dumps(value) + "\n")
+        with open(self.filepath, "a") as f:
+            fcntl.lockf(f, fcntl.LOCK_EX)
+            f.write(json.dumps(value) + "\n")
+            fcntl.lockf(f, fcntl.LOCK_UN)
 
     async def get(self):
         while True:
-            with open(self.filepath, "a+") as fifo:
-                fifo.seek(0)
-                data = fifo.readline()
-                with open(self.filepath + "2", "a+") as fifo2:
-                    fifo2.seek(0)
-                    shutil.copyfileobj(fifo, fifo2)
-            shutil.move(self.filepath + "2", self.filepath)
+            tmpfilepath = self.filepath + "2"
+            with open(self.filepath, "a+") as f:
+                fcntl.lockf(f, fcntl.LOCK_EX)
+                f.seek(0)
+                data = f.readline()
+                with open(tmpfilepath, "a+") as tmpf:
+                    tmpf.seek(0)
+                    shutil.copyfileobj(f, tmpf)
+                fcntl.lockf(f, fcntl.LOCK_UN)
+            shutil.move(tmpfilepath, self.filepath)
             if data != "":
                 return json.loads(data)
             await asyncio.sleep(0.1)
