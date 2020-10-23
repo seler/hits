@@ -2,10 +2,12 @@ import asyncio
 import fcntl
 import json
 import shutil
+from pathlib import Path
 
 
 class Queue:
-    def __init__(self, filepath):
+    def __init__(self, filepath: Path):
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         self.filepath = filepath
 
     async def put(self, value):
@@ -16,7 +18,7 @@ class Queue:
 
     async def get(self):
         while True:
-            tmpfilepath = self.filepath + "2"
+            tmpfilepath = self.filepath.with_name(self.filepath.name + "tmp")
             with open(self.filepath, "a+") as f:
                 fcntl.lockf(f, fcntl.LOCK_EX)
                 f.seek(0)

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import subprocess
 from pathlib import Path
 
@@ -12,8 +13,6 @@ from file_queue import Queue
 logger = logging.getLogger(__name__)
 __version_info__ = (0, 1, "dev1")
 __version__ = ".".join(map(str, __version_info__))
-
-import os
 
 
 async def download_and_convert(source_url, destination_dir: Path):
@@ -29,11 +28,11 @@ async def download_and_convert(source_url, destination_dir: Path):
             break
 
     video_dest_dir = destination_dir / "Video"
-    audio_dest_dir = destination_dir / "Music"
+    audio_dest_dir = destination_dir / "Audio"
     black_dest_dir = destination_dir / "Black"
-    video_dest_dir.mkdir(exist_ok=True)
-    audio_dest_dir.mkdir(exist_ok=True)
-    black_dest_dir.mkdir(exist_ok=True)
+    video_dest_dir.mkdir(parents=True, exist_ok=True)
+    audio_dest_dir.mkdir(parents=True, exist_ok=True)
+    black_dest_dir.mkdir(parents=True, exist_ok=True)
 
     normal_tmp_filename = video_dest_dir / f"{filename_wo_ext}.{ext}"
     audio_tmp_filename = audio_dest_dir / f"{filename_wo_ext}.mp3"
@@ -55,9 +54,9 @@ async def download_and_convert(source_url, destination_dir: Path):
     logger.info("Download and processing done.")
 
 
-async def loop(destination_dir):
+async def loop(queue_file, destination_dir):
     while True:
-        queue = Queue("./queuefile")
+        queue = Queue(queue_file)
         queue_data = await queue.get()
         try:
             logger.info(f"Processing {json.dumps(queue_data)}")
@@ -79,7 +78,8 @@ def main():
     parser.add_argument(
         "--version", action="version", version="%(prog)s {}".format(__version__)
     )
-    parser.add_argument("--destination", type=Path)
+    parser.add_argument("--destination", type=Path, required=True)
+    parser.add_argument("--queue-file", type=Path, required=True)
 
     args = parser.parse_args()
 
@@ -92,7 +92,7 @@ def main():
     logging.basicConfig(level=level)
     logger.info("Starting main loop.")
     try:
-        asyncio.run(loop(args.destination.resolve()))
+        asyncio.run(loop(args.queue_file.resolve(), args.destination.resolve()))
     except (KeyboardInterrupt, SystemExit):
         parser.exit(status=0, message="Gracefully exiting.\n")
 
