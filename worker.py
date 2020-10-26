@@ -22,7 +22,7 @@ async def download_and_convert(source_url, destination_dir: Path):
         filename = ytdl.prepare_filename(info)
     filename_wo_ext = os.path.splitext(filename)[0]
 
-    for ext in ["mp4", "mkv"]:
+    for ext in ["mp4", "mkv", "webm"]:
         filepath = Path(f"{filename_wo_ext}.{ext}").resolve()
         if filepath.exists():
             break
@@ -33,6 +33,9 @@ async def download_and_convert(source_url, destination_dir: Path):
     video_dest_dir.mkdir(parents=True, exist_ok=True)
     audio_dest_dir.mkdir(parents=True, exist_ok=True)
     black_dest_dir.mkdir(parents=True, exist_ok=True)
+
+    if ext not in ["mp4", "mkv"]:
+        ext = "mkv"
 
     normal_tmp_filename = video_dest_dir / f"{filename_wo_ext}.{ext}"
     audio_tmp_filename = audio_dest_dir / f"{filename_wo_ext}.mp3"
